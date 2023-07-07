@@ -1,0 +1,1379 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+![](%22.%5Cimagenes%5CGrey%20Modern%20Minimalist%20Cover%20Page.png%22) \newpage
+
+# Librerías utilizadas:
+
+-   **readxl**: Librería para leer y importar datos de hojas de cálculo de Excel.
+-   **dplyr**: Librería para manipulación y transformación eficiente de datos.
+-   **stringr**: Librería para manipulación y procesamiento de cadenas de texto.
+-   **ggplot2**: Librería para la creación de gráficos y visualizaciones de datos de alta calidad.
+-   **tidyverse**: Conjunto de librerías, incluyendo dplyr y ggplot2, que proporciona un conjunto completo de herramientas para la manipulación, visualización y análisis de datos .
+-   **lubridate**: Librería para el manejo de fechas y horas en R Studio, facilitando la manipulación y cálculos relacionados con el tiempo.
+-   **broom**: Librería que permite la lectura de archivos shapefile.
+-   **knitr**: Librería de R que permite combinar código, texto y resultados de forma elegante y sencilla.
+-   **grdiExtra**: Librería que permite imprimir gráficas al lado de manera sencilla.
+
+```{r}
+library(readxl)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(lubridate)
+library(broom)
+library(rgdal)
+library(knitr)
+library(gridExtra)
+library(plotly)
+```
+
+
+```{r}
+library(tidyverse)
+```
+
+# Datasets utilizados:
+
+## Fuente: INE
+
+-   [**Delitos según sexo**](https://www.ine.es/jaxiT3/Tabla.htm?t=49049)
+-   [**Delitos según grado de comisión**](https://www.ine.es/jaxiT3/Tabla.htm?t=26016)
+-   [**Delitos según edad**](https://www.ine.es/jaxiT3/Tabla.htm?t=26013)
+-   [**Delitos según el lugar de condena**](https://www.ine.es/jaxiT3/Tabla.htm?t=26017)
+-   [**Delitos según sexo, nacionalidad y número de delitos**](https://www.ine.es/jaxiT3/Tabla.htm?t=25698)
+-   [**Delitos sexuales según la nacionalidad**](https://www.ine.es/jaxiT3/Tabla.htm?t=28716)
+
+Lista de **delitos** a tratar considerados **relevantes** para la investigación:
+
+-   Homicidio, Homicidio por imprudencia y Asesinato
+-   Lesiones
+-   Amenazas
+-   Sustracción de menores
+-   Hurtos
+-   Robo con violencia
+-   Robo con fuerza
+-   Estafas
+-   Contra la salud pública
+-   Contra la seguridad vial
+-   Falsedades documentales
+-   Quebrantamiento de condena
+-   Resistencia y desobediencia
+
+## Fuente: DATA.GOV
+
+-   [**Crimes -- 2001 to Present**](https://catalog.data.gov/dataset/crimes-2001-to-present)
+
+## Fuente: epdata
+
+-   [**Las cifras del crimen en España**](https://www.epdata.es/cifras-crimen-espana/d46b83fd-58df-4c71-bdeb-d40691a66838?accion=2)
+
+## Fuente: datos.gob
+
+-   [**Delitos según nacionalidad por comunidades y ciudades autónomas**](https://datos.gob.es/es/catalogo/ea0010587-delitos-segun-nacionalidad-por-comunidades-y-ciudades-autonomas-cona-identificador-api-49053)
+
+## Fuente: argis.com
+
+-   [**Comunidades Autónomas de España**](https://www.arcgis.com/home/item.html?id=5f689357238847bc823a2fb164544a77)
+
+\newpage
+
+# Introducción
+
+|       La temática escogida es el crimen, centrándose en el estudio y análisis de los delitos perpetrados, así como en las causas y consecuencias de estos actos dentro de la sociedad. Este tema es de gran relevancia tanto para la criminología como para disciplinas como la sociología, la psicología y la política. Nuestro objetivo principal es abordar las preocupaciones que podría tener el gobierno de España, el cual sería nuestro usuario final. También pretendemos aportar posibles soluciones a los diferentes problemas que encontremos para ayudar al gobierno español a disminuir la criminalidad en España.
+
+|       El análisis de datos relacionados con el crimen adquiere una gran importancia, ya que permite obtener una comprensión más precisa de las tendencias y patrones delictivos, así como identificar áreas de riesgo y desarrollar estrategias efectivas para prevenir y combatir el delito. Además, estos datos pueden ser útiles para evaluar la eficacia de políticas y programas destinados a reducir la criminalidad y mejorar la seguridad pública. En resumen, el análisis de datos relacionados con el crimen constituye una herramienta valiosa para comprender y abordar uno de los mayores desafíos que enfrenta la sociedad moderna.
+
+# Limpieza de datos
+
+|       Antes de realizar el estudio exhaustivo hemos realizado la siguiente limpieza de los datos según el conjunto de datos:
+
+## Datos obtenidos del Instituto Nacional de Estadística
+
+1.  **Carga y visualización de los datasets**. Esta tarea se ha realizado para conocer los tipos de datos y sus características como estudio previo.
+
+```{r}
+delitos_comision <- read_excel("./datos/delitos_segun_comision.xlsx", na = "")
+delitos_edad <- read_excel("./datos/delitos_segun_edad.xlsx", na = "")
+delitos_sexo <- read_excel("./datos/delitos_segun_sexo.xlsx", na = "")
+lugar_condena <- read_excel("./datos/delitos_segun_lugar_condena.xlsx", na = "")
+numero_delitos <- read_excel("./datos/delitos_segun_numero.xlsx", na ="")
+delitos_sexuales <- read_excel("./datos/delitos_sexuales.xlsx", na = "")
+```
+
+2.  El **nombre de una de las columnas** era poco manejables así que lo renombramos.
+
+```{r}
+delitos_edad %>% 
+    rename(`tipo_de_delitos` = `Tipos de delitos`) -> delitos_edad
+
+delitos_edad %>% 
+    rename(`rango_de_edad` = `Rangos de edad`) -> delitos_edad
+```
+
+```{r}
+delitos_comision %>% 
+    rename(`tipo_de_delitos` = `Tipo de delito`) -> delitos_comision
+
+delitos_comision %>% 
+    rename(`grado_de_comision` = `Grado de comision`) -> delitos_comision
+```
+
+```{r}
+delitos_sexo %>% 
+    rename(`tipo_de_delitos` = `Tipo de delito`) -> delitos_sexo
+```
+
+3.  **Comprobación de NAs**: identificar y evaluar los valores faltantes (NA, Not Available) en un conjunto de datos, con el fin de entender la calidad y completitud de la información.
+
+```{r, results='hide'}
+paste("Dataset Delitos según grado de comisión: NAs =", sum(is.na(delitos_comision)))
+paste("Dataset Delitos según sexo: NAs =", sum(is.na(delitos_sexo)))
+paste("Dataset Delitos según edad: NAs =", sum(is.na(delitos_edad)))
+paste("Dataset Delitos según el lugar de condena: NAs =", sum(is.na(lugar_condena)))
+paste("Dataset Delitos según sexo, nacionalidad y número de delitos: NAs =", sum(is.na(numero_delitos)))
+paste("Dataset sexuales según la nacionalidad: NAs =", sum(is.na(delitos_sexuales)))
+```
+
+|       Por tanto, se observa que el quinto y sexo dataset los cuales corresponden a nacionalidades tienen una gran cantidad de NAs por lo que es necesario su tratamiento.
+
+```{r, results='hide'}
+columnas_con_nas <- apply(numero_delitos, 2, function(x) any(is.na(x)))
+nombres_columnas_con_nas <- colnames(numero_delitos)[columnas_con_nas]
+filas_con_nas <- numero_delitos[apply(numero_delitos[, nombres_columnas_con_nas], 1, function(x) any(is.na(x))), ]
+tipos_delitos_con_nas <- unique(filas_con_nas$Nacionalidad)
+print(tipos_delitos_con_nas)
+```
+
+```{r, results='hide'}
+columnas_con_nas <- apply(delitos_sexuales, 2, function(x) any(is.na(x)))
+nombres_columnas_con_nas <- colnames(delitos_sexuales)[columnas_con_nas]
+filas_con_nas <- delitos_sexuales[apply(delitos_sexuales[, nombres_columnas_con_nas], 1, function(x) any(is.na(x))), ]
+tipos_delitos_con_nas <- unique(filas_con_nas$Nacionalidad)
+print(tipos_delitos_con_nas)
+```
+
+|       Después de identificar las nacionales que contienen NAs, es observable que en ambos datasets las nacionalidades que contienen NAs son : "País de la UE28 sin España", "País de Europa menos UE27_2020" , "País de la UE27_2020 sin España" y "País de Europa menos UE28". Por tanto, determinamos que dichas nacionalidades no son de gran interés por lo que se decide suprimirlas.
+
+```{r, results='hide'}
+numero_delitos %>%
+  filter(!Nacionalidad %in% tipos_delitos_con_nas) -> numero_delitos
+
+delitos_sexuales %>%
+  filter(!Nacionalidad %in% tipos_delitos_con_nas) -> delitos_sexuales
+
+paste("Dataset Delitos según sexo, nacionalidad y número de delitos: NAs =", sum(is.na(numero_delitos)))
+paste("Dataset sexuales según la nacionalidad: NAs =", sum(is.na(delitos_sexuales)))
+```
+
+4.  **Nombres de las variables**
+
+|       Los nombres de los tipos de delitos en el dataset según el lugar de condena contienen un número que no es relevante para nuestra investigación por lo que hemos decidido suprimir dichos números y espacios previos. Un claro ejemplo es que se ha pasado de tener "1.1 Homicidio" a "Homcidio", lo cual nos facilita las visualizaciones.
+
+```{r, results='hide'}
+print(unique(lugar_condena$Tipo_delito))
+```
+
+```{r}
+delitos_comision %>% 
+  mutate(tipo_de_delitos = str_replace_all(tipo_de_delitos, "\\b\\d+(\\.\\d+)*\\b", "")) %>%
+  mutate(tipo_de_delitos = trimws(tipo_de_delitos)) -> delitos_comision
+```
+
+```{r}
+delitos_edad %>% 
+  mutate(tipo_de_delitos = str_replace_all(tipo_de_delitos, "\\b\\d+(\\.\\d+)*\\b", "")) %>%
+  mutate(tipo_de_delitos = trimws(tipo_de_delitos)) -> delitos_edad
+```
+
+```{r}
+delitos_sexo %>% 
+  mutate(tipo_de_delitos = str_replace_all(tipo_de_delitos, "\\b\\d+(\\.\\d+)*\\b", "")) %>%
+  mutate(tipo_de_delitos = trimws(tipo_de_delitos)) -> delitos_sexo
+```
+
+```{r, results='hide'}
+lugar_condena %>% 
+  mutate(Tipo_delito = str_replace_all(Tipo_delito, "\\b\\d+(\\.\\d+)*\\b", "")) %>%
+  mutate(Tipo_delito = trimws(Tipo_delito)) -> lugar_condena
+
+print(unique(lugar_condena$Tipo_delito))
+```
+
+|       Por otro lado, las nacionalidades en el dataset de delitos sexuales y el dataset de nacionalidad por número de delitos vienen descritas con la preposición "De" por lo que decidimos modificar el nombre y dejar únicamente el continente.
+
+```{r, results='hide'}
+print(unique(delitos_sexuales$Nacionalidad))
+```
+
+```{r, results='hide'}
+delitos_sexuales %>%
+  mutate(Nacionalidad = str_replace(Nacionalidad, "De ", "")) -> delitos_sexuales
+
+numero_delitos %>%
+  mutate(Nacionalidad = str_replace(Nacionalidad, "De ", "")) -> numero_delitos
+
+print(unique(delitos_sexuales$Nacionalidad))
+```
+
+\newpage
+
+## Datos obtenidos de datos.gob: Delitos según nacionalidad por comunidades y ciudades autónomas
+
+```{r}
+dataframe_cca <- read.csv("./datos/49053.csv", header = TRUE, sep = ";", na ="")
+```
+
+1.  **Nombres de columnas poco manejables**
+
+|       Se ha modificado el nombre "Lugar.de.condena" para facilitar su tratamiento.
+
+```{r}
+dataframe_cca %>% 
+    rename(`Lugar_de_condena` = `Lugar.de.condena`) -> dataframe_cca
+```
+
+2.  **Tratamiento de NAs**
+
+|       Al igual que en el caso del Instituto Nacional de Estadística dicho dataset contiene nacionalidades con una gran cantidad de nAs por lo que se han suprimido dichas nacionalidades irrelevantes.
+
+```{r}
+nacionalidades_con_nas <- unique(dataframe_cca$Nacionalidad[is.na(dataframe_cca$Total)])
+dataframe_cca <- dataframe_cca[!(dataframe_cca$Nacionalidad %in% nacionalidades_con_nas), ]
+```
+
+3.  **Nombres de variables**
+
+|       Las nacionalidades en el dataset vienen descritas con la preposición "De" por lo que decidimos modificar el nombre y dejar únicamente el continente.
+
+```{r, results='hide'}
+dataframe_cca %>%
+  mutate(Nacionalidad = str_replace(Nacionalidad, "De ", "")) -> dataframe_cca
+
+print(unique(dataframe_cca$Nacionalidad))
+```
+
+|       Además, las Comunidades Autónomas vienen descritas por su número lo que suprimiremos para trabajar con sus nombres únicamente.
+
+```{r}
+dataframe_cca$Lugar_de_condena <- sub("^\\d+\\s+", "", dataframe_cca$Lugar_de_condena)
+```
+
+## Datos obtenidos de DATA.GOV: Crimes - 2001 to Present
+
+```{r}
+dataframe_chicago <- read.csv("./datos/Crimes_-_2001_to_Present.csv", header = TRUE, sep = ",")
+```
+
+1.  **Eliminación de variables irrelevantes**. Se considera que en nuestra investigación existen columnas irrelevantes por lo que hemos decidido suprimirlas dejando únicamente las siguientes columnas:
+
+-   ID
+-   Primary.Type
+-   Year
+
+```{r}
+borrar <- c("Case.Number", "Date", "Block", "IUCR", "Description", "Location.Description", "Arrest", "Domestic", "Beat", "District", "Ward", "Community.Area", "FBI.Code", "X.Coordinate", "Y.Coordinate", "Updated.On", "Latitude", "Longitude", "Location")
+df <- dataframe_chicago[ , !(names(dataframe_chicago) %in% borrar)]
+```
+
+2.  **Tratamiento de NAs**. Considerando el dataset de un gran tamaño, se ha decidido suprimir aquellas filas con NAs.
+
+```{r}
+df_chicago_sin_na <- na.omit(df)
+```
+
+3.  **Nombres de variables**. Se modifican aquellas columnas para facilitar el trabajo con las mismas.
+
+```{r}
+df_chicago_sin_na <- setNames(df_chicago_sin_na, c("Identificador", "Tipo", "Año"))
+```
+
+## Datos obtenidos de epdata: Las cifras del crimen en España
+
+```{r}
+dataframe_españa <- read.csv("./datos/las_cifras_del_crimen_en_españa.csv", header = TRUE, sep =";", na ="")
+```
+
+1.  **Comprobación de NAs**
+
+|       Este dataframe contiene en sus últimas filas una descripción del conjunto de datos por lo que es necesario suprimir dichas filas con la finalidad de suprimir los NAs correspondientes a la descripción.
+
+```{r}
+df_españa <- dataframe_españa[-c(45:58),]
+```
+
+2.  **Nombres de columnas**
+
+|       Se ha modificado el nombre "Denuncias..datos.acumulados" para facilitar el trabajo con las variables.
+
+```{r}
+df_españa %>% 
+    rename(Denuncias = `Denuncias..datos.acumulados`) -> df_españa
+```
+
+## Datos obtenidos de argis.com: Comunidades Autónomas de España
+
+|       Este conjunto de datos es necesario cargarlo y juntas los nombres de las Comunidades Autónomas para su uso.
+
+```{r, results= 'hide'}
+ruta_archivo <- "./datos/Comunidades_Autonomas_ETRS89_30N.shp"
+shapefile_ccaa <- readOGR(dsn = ruta_archivo)
+data_ccaa <- tidy(shapefile_ccaa)
+```
+```{r}
+nombres_ccaa <- data.frame(shapefile_ccaa$Texto)
+nombres_ccaa$id <- as.character(seq(0, nrow(nombres_ccaa)-1))
+```
+
+```{r}
+data_ccaa_mapa <- left_join(data_ccaa, nombres_ccaa, by = "id")
+data_ccaa_mapa <- rename(data_ccaa_mapa, comunidad_autonoma = shapefile_ccaa.Texto )
+```
+
+\newpage
+
+# Exploración de los datos
+
+|       La Criminología es una disciplina que estudia el fenómeno criminal desde diversas perspectivas, analizando sus causas, consecuencias y tratando de encontrar estrategias para prevenir y controlar la delincuencia. En España, la Criminología ha adquirido una relevancia cada vez mayor en los últimos años, en respuesta a la necesidad de comprender y abordar los problemas de seguridad y justicia.
+
+Según datos del Instituto Nacional de Estadística (INE) a nivel nacional, la **tasa de criminalidad** en España en el año 2021 fue de **41,36** infracciones penales por cada 1.000 habitantes. Esta cifra refleja la incidencia de los delitos cometidos en el país y muestra la importancia de analizar y comprender los factores que contribuyen a la comisión de actos delictivos.
+
+En cuanto a la **tasa de homicidios** en España, también según el INE, alcanzó un valor de **0,61 homicidios y asesinatos consumados** por cada 100.000 habitantes en el año 2021. Esta cifra pone de manifiesto la relevancia de estudiar y abordar este tipo de delitos, así como implementar medidas efectivas para prevenirlos y garantizar la seguridad de la población.
+
+
+```{r, fig.align='center', fig.width= 10, fig.height=6, fig.show='asis'}
+data_ccaa_mapa %>%
+  mutate(lat = case_when(id == 4 ~ lat+800000, 
+                             id != 4 ~ lat,
+                             TRUE ~ 0)) %>%
+  mutate(long = case_when(id == 4 ~ long+300000, 
+                             id != 4 ~ long,
+                             TRUE ~ 0)) %>%
+  ggplot(aes( x= long, y = lat, group = group)) +
+  geom_polygon(color = "black", lwd = 1,fill = "white") +
+  geom_rect(aes(xmin = -800000,xmax = -100000, ymin = 3800000, ymax = 4200000), fill = NA,
+            color = "black", size = 1)+
+  guides(fill=FALSE)+
+  theme(axis.line = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank())+
+  geom_rect(aes(xmin = -725000, xmax = -275000, ymin = 4500000, ymax = 4780000), fill = "white") +
+  annotate("text", x = -500000, y = 4725000, label = "Tasa de criminalidad", color = "black", size = 5, fontface = "bold")+
+  annotate("text", x = -500000, y = 4625000, label = "41,36", color = "black", size = 15, fontface = "bold")
+
+```
+
+|       Una manera efectiva de llevar a cabo el estudio es a través de la visualización de datos. Para asegurar que todo nuestro análisis se mantenga en armonía y transmita coherencia visual, hemos creado un tema personalizado y una paleta de colores única. Al utilizar este tema y paleta de colores en nuestras gráficas, podemos asegurar que todas ellas mantengan un estilo consistente y que se complementen entre sí. Esto no solo brinda una apariencia visualmente agradable, sino que también facilita la interpretación de los datos y resalta los patrones y tendencias relevantes. Al mantener una coherencia en el estilo de las gráficas, podemos mejorar la comprensión de los resultados y comunicar de manera efectiva nuestras conclusiones a través de la visualización de datos.
+
+\newpage
+
+```{r}
+theme_crimen <- function() {
+  
+  base_size <- 9
+  
+  plot_title_size <- 12
+  plot_title_face <- "bold"
+  plot_title_margin <- 10
+  
+  subtitle_size <- 10
+  subtitle_face <- "plain"
+  subtitle_margin <- 15
+  
+  strip_text_size <- 12
+  strip_text_face <- "plain"
+  caption_size <- 9
+  caption_face <- "italic"
+  caption_margin <- 10
+  axis_text_size <- base_size
+  axis_title_size <- 9
+  axis_title_face <- "bold"
+  axis_title_just <- "rt"
+  plot_margin <- margin(0, 10, 00, 10)
+  grid_col <- "#cccccc"
+  grid <- TRUE
+  axis_col <- "black"
+  
+  theme_set(theme_bw())
+  theme_custom <- theme(
+    text = element_text(size = base_size),
+    plot.title = element_text(size = plot_title_size, 
+                              face = plot_title_face, 
+                              margin = margin(plot_title_margin, 0,1, 0),
+                              hjust = 0.5),
+    plot.subtitle = element_text(size = subtitle_size, 
+                                 face = subtitle_face, 
+                                 margin = margin(subtitle_margin, 0, 10, 0)),
+    strip.text = element_text(size = strip_text_size, 
+                              face = strip_text_face),
+    plot.caption = element_text(size = caption_size, 
+                                face = caption_face, 
+                                margin = margin(0, 0, 0, 0)),
+    axis.text = element_text(size = axis_text_size),
+    axis.title = element_text(size = axis_title_size, 
+                              face = axis_title_face),
+    plot.margin = plot_margin,
+    panel.grid.major = element_line(color = grid_col, linetype ="solid"),
+    panel.grid.minor = element_blank(),
+    panel.spacing.y = unit(0.5, "lines"),
+    legend.title = element_text(face = "bold"),
+    legend.text = element_text(size = base_size),
+    axis.line = element_line(color = axis_col, linetype = "solid"),
+    axis.ticks = element_blank()
+  )
+  
+  return(theme_custom)
+}
+
+
+theme_facet_title_bg <- function() {
+  color <- "azure2"
+  size <- 7
+  theme_custom <- theme_crimen()
+  theme_custom$strip.background <- element_rect(fill = color)
+  theme_custom$strip.text <- element_text(size = size, face = "bold")
+  return(theme_custom)
+}
+```
+
+```{r}
+turquesa_palette <- c("white", "#EBFFFF", "#B2FFFF", "#A3F0FF", "#94E1FF", "#66B4FF", "#57A4FF", "#4895FF", "#3986FF", "#2976FF", "#1967FF", "#2976FF", "#3986FF", "#4895FF", "darkblue")
+
+violeta_palette <- c("white", "thistle1", "#EBA4FF", "#E091FF", "#D77EFF", "#CE6BFF", "#C459FF", "#BB46FF", "#B234FF", "#A821FF", "#9F0FFF", "#960CFF", "#8D0AFF", "#8407FF", "#7B05FF", "#7202FF", "#6900FF")
+
+rosa_palette <- c("#FFB2FF", "#FFA3FF", "#FF94FF", "#FF85FF", "#FF75FF", "#FF66FF", "#FF57FF", "#FF48FF", "#FF0099", "#FF007F", "#FF004C", "#FF3333", "#FF6666", "#FF9999", "#FFCCCC")
+
+combined_palette <- c("#B2FFFF", "#A3F0FF", "#94E1FF", "#85D2FF", "#75C3FF", "#66B4FF", "#57A4FF", "#FF85FF", "#EBA4FF", "#FF48FF", "#FF0099", "#FF007F", "#FF004C", "#FF9999", "#FFCCCC", "#E091FF", "#D77EFF", "#CE6BFF", "#C459FF", "#B234FF")
+
+
+
+```
+
+\newpage 
+## Delitos según grado de comisión a lo largo de los años
+
+|       En el presente estudio, nos adentraremos en el análisis de los delitos cometidos en España a lo largo de los años, centrándonos específicamente en su grado de comisión. El objetivo es examinar y comprender la evolución de estos delitos según su nivel de gravedad, para así obtener una visión más completa de la situación delictiva en el país. 
+
+Para poder interpretar mejor los resultados tenemos las definiciones de cada uno de los grados de comisión:
+
+- **Consumación**: se refiere a cuando se ha completado la totalidad del delito y se ha logrado el resultado deseado.
+
+- **Tentativa**: se refiere a cuando se ha intentado cometer el delito pero no se ha logrado el resultado deseado, ya sea por acción de la policía, la víctima o por cualquier otro motivo fortuito.
+
+- **Conspiración**: se refiere a cuando se ha establecido un acuerdo previo entre dos o más personas para cometer un delito, aunque todavía no se haya llevado a cabo ningún acto concreto para su ejecución.
+
+Existen otros grados de comisión de un delito, como la provocación, la complicidad y la omisión que estarían comprendidosen la agrupación 'Otros'.
+
+
+```{r}
+delitos_comision_f <- delitos_comision %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Año", values_to = "Cantidad_delitos")
+```
+
+
+```{r}
+grafico_barras <- ggplot(delitos_comision_f, aes(x = Año, y = Cantidad_delitos, fill = grado_de_comision)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Delitos según grado de comisión a lo largo de los años", x = "Año", y = "Cantidad de delitos") +
+  scale_fill_manual(values = combined_palette[c(10,20,2,7)]) +
+  theme_crimen()+
+  theme(legend.title = element_blank())
+
+grafico_barras
+```
+
+|       Como se puede ver en la gráfica la cantidad de delitos se concentra en los grados de comisión Consumación y Tentativa siendo Consumación el grado de comisión de delitos más común.
+\newpage
+
+```{r, fig.align='center'}
+delitos_grado_año <- delitos_comision_f %>%
+  group_by(grado_de_comision) %>%
+  summarize(mayor_tipo_delito = tipo_de_delitos[which.max(Cantidad_delitos)])
+
+delitos_grado_año <- delitos_grado_año %>%
+  arrange(grado_de_comision)
+
+
+grafico_barras_2 <- ggplot(data = delitos_grado_año, aes(x = grado_de_comision, y = mayor_tipo_delito, fill = mayor_tipo_delito)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Tipo de Delito más Común según Grado de Comisión",
+       x = "Grado de Comisión", y = "") +
+  scale_fill_manual(values = combined_palette[c(20,7)]) +
+  theme_crimen() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_y_discrete(position = "right")
+
+print(grafico_barras_2)
+```
+
+|       Como apreciamos en la gráfica anterior para los grados de comisión de delitos Conspiración y Consumación
+el delito más común es ‘Contra la seguridad vial’. Para los grados de comisión de delitos Tentativa y Otros el
+delito más común es ‘Hurtos’.
+
+
+## Total de delitos cometidos según su grado de comisión:
+
+```{r, results='hide'}
+columnas_años <- grep("^20", names(delitos_comision), value = TRUE)
+delitos_comision$total_delitos <- rowSums(delitos_comision[columnas_años])
+cantidad_total_delitos <- aggregate(total_delitos ~ grado_de_comision, data = delitos_comision, FUN = sum)
+cantidad_total_delitos <- cantidad_total_delitos[order(-cantidad_total_delitos$total_delitos), ]
+
+print(cantidad_total_delitos)
+```
+
+ \
+ \
+ 
+\begin{table}[ht]
+\centering
+\begin{tabular}{lr}
+\hline
+\textbf{Grado de comisión} & \textbf{Total delitos} \\
+\hline
+Consumación & 2.289.908\\
+Tentativa & 277.107 \\
+Conspiración & 11.550 \\
+Otras & 1.669	\\
+\hline
+\end{tabular}
+\end{table}
+
+ \
+ 
+|       **Conclusión**
+
+|       Podemos concluir que la gran parte de delitos cometidos se han consumado seguidos por la tentativa de los mismos pero muy por debajo. Esto tiene mucho sentido ya que los delitos que se llavan a cabo son mucho más fáciles de demostrar ante un jurado que el intento de cometer un delito.
+
+\newpage 
+
+## Delitos según Rangos de Edad
+
+|       El objetivo principal de este punto es examinar de cerca la relación entre los delitos y las diferentes franjas etarias de la población, con el fin de comprender cómo varía la comisión de delitos en función de la edad.Mediante el análisis de datos sobre delitos cometidos en España a lo largo de los años, se busca identificar patrones y tendencias específicas relacionadas con la participación de diferentes grupos de edad en la comisión de delitos. Esto nos permitirá obtener una visión más precisa de cómo influyen factores como la juventud, la madurez o la vejez en la ocurrencia de delitos, así como entender si existen diferencias significativas en los tipos de delitos cometidos por cada grupo etario. Al explorar estos aspectos, se espera obtener información valiosa que pueda contribuir a la formulación de políticas públicas y estrategias de prevención del delito más efectivas y enfocadas en las necesidades específicas de cada grupo de edad.
+
+
+```{r, fig.width = 8, fig.height=5}
+delitos_edad_long <- delitos_edad %>%
+  gather(key = "Año", value = "Cantidad", -tipo_de_delitos, -rango_de_edad)
+
+delitos_edad_long$Año <- as.numeric(delitos_edad_long$Año)
+
+set.seed(132)
+grafico_barras <- ggplot(data = delitos_edad_long, aes(x = rango_de_edad, y = Cantidad, fill = tipo_de_delitos)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Distribución de Delitos según Rangos de Edad",
+       x = "Rango de Edad",
+       y = "Cantidad de Delitos") +
+  theme_crimen() +
+  scale_fill_manual(values = sample(combined_palette))+
+  theme(legend.title = element_blank())
+
+print(grafico_barras)
+```
+
+|       El rango de edad en la que se cometen más delitos es entre 41-50 años siendo el delito con más condenas 'Contra la seguridad vial' seguido de 'Lesiones' y 'Hurtos'.
+\newpage
+
+```{r}
+tipos_delito <- unique(delitos_edad_long$tipo_de_delitos)
+
+graficos_barras <- list()
+max_cantidad <- max(delitos_edad_long$Cantidad)
+
+for (tipo in tipos_delito) {
+  set.seed(132)
+  grafico <- ggplot(data = filter(delitos_edad_long, tipo_de_delitos == tipo),
+                    aes(x = as.factor(rango_de_edad), y = Cantidad, fill = rango_de_edad)) +
+    geom_bar(stat = "identity", width = 0.7) +
+    labs(title = paste(tipo),
+         x = NULL, y = "Cantidad de Delitos",
+         fill = "Rango de Edad") +
+    theme_crimen() +
+    scale_fill_manual(values = sample(combined_palette))+
+    theme(legend.position = "bottom", 
+          legend.title = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1))+
+  ylim(0, max_cantidad)
+  
+  graficos_barras[[tipo]] <- grafico
+}
+
+```
+
+```{r, fig.height=4}
+n <- length(tipos_delito)
+for (i in seq(1, n, 4)) {
+  if(i+3 < n){
+    tipo1 <- tipos_delito[i]
+    tipo2 <- tipos_delito[i+1]
+    grafico1 <- graficos_barras[[tipo1]]
+    grafico2 <- graficos_barras[[tipo2]]
+    grid.arrange(grafico1, grafico2, ncol = 2)
+    tipo1 <- tipos_delito[i+2]
+    tipo2 <- tipos_delito[i+3]
+    grafico1 <- graficos_barras[[tipo1]]
+    grafico2 <- graficos_barras[[tipo2]]
+    grid.arrange(grafico1, grafico2, ncol = 2)
+  }
+  else{
+    tipo1 <- tipos_delito[i]
+    tipo2 <- tipos_delito[i+1]
+    grafico1 <- graficos_barras[[tipo1]]
+    grafico2 <- graficos_barras[[tipo2]]
+    grid.arrange(grafico1, grafico2, ncol = 2)
+    tipo1 <- tipos_delito[i+2]
+    grafico1 <- graficos_barras[[tipo1]]
+    grid.arrange(grafico1, ncol = 1)
+  }
+}
+```
+
+|       Por lo general en todos los delitos, la edad en la que más se cometen es entre 41 y 50 años. Sin embargo en Robo con violencia el rango de edad común es 18-20. En Robo con fuerza 21-25. Y en delitos contra la salud pública 26-30. Cabe destacar que en delitos graves como Homicidio, Asesinato u Homicidio por imprudencia la edad 41-50 es la más común.
+
+\newpage
+
+## Distribución de Delitos según Rango de Edad:
+
+|       Nos adentraremos en el análisis de la distribución de los delitos en función del rango de edad en una población determinada. El objetivo es examinar cómo se distribuyen los delitos en diferentes grupos de edad.
+
+```{r}
+delitos_edad_long <- delitos_edad %>%
+  gather(key = "Año", value = "Cantidad", -tipo_de_delitos, -rango_de_edad)
+
+delitos_edad_long$Año <- as.numeric(delitos_edad_long$Año)
+rangos_edad <- unique(delitos_edad_long$rango_de_edad)
+
+graficos_barras <- list()
+max_cantidad <- max(delitos_edad_long$Cantidad)
+
+for (rango in rangos_edad) {
+  set.seed(12)
+  grafico <- ggplot(data = filter(delitos_edad_long, rango_de_edad == rango),
+                    aes(x = "", y = Cantidad, fill = tipo_de_delitos)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(title = paste("Rango de edad:", rango),
+         x = "Tipo de Delito",
+         y = "Cantidad de Delitos") +
+    theme_crimen() +
+    scale_fill_manual(values = sample(combined_palette))+
+    theme(legend.title = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1))+
+    ylim(0, max_cantidad)
+  
+  graficos_barras[[rango]] <- grafico
+}
+```
+
+```{r, fig.height=4}
+n <- length(rangos_edad)
+for (i in seq(1, n, 2)) {
+  if(i+1 > n){
+    rango1 <- rangos_edad[i]
+    grafico1 <- graficos_barras[[rango1]]
+    grid.arrange(grafico1,ncol = 1)
+  }
+  else{
+    rango1 <- rangos_edad[i]
+    rango2 <- rangos_edad[i+1]
+    grafico1 <- graficos_barras[[rango1]]
+    grafico2 <- graficos_barras[[rango2]]
+    grid.arrange(grafico1,ncol = 1)
+    grid.arrange(grafico2,ncol = 1)
+  }
+}
+```
+
+
+|       Cabe destacar que entre 18-20 años el delito más común son los hurtos seguido de lesiones. Continúan siendo delitos comunes entre 20-61 años pero son superados por los delitos Contra la seguridad vial. Cabe destacar que a partir de los 71 años los delitos por Lesiones aumentan superando a los delitos contra la seguridad vial lo cuál ha sido un descubrimiento sorprendente para nosotros.
+
+
+## Distribución de Delitos según Sexo:
+
+|       Nuestro objetivo es examinar y comprender cómo se distribuyen los delitos en función del género, con el fin de obtener una visión más completa de la composición y características de la delincuencia en nuestro contexto.
+
+```{r}
+delitos_sexo <- delitos_sexo %>%
+  select(tipo_de_delitos, starts_with("20"), Sexo) %>%
+  mutate(across(starts_with("20"), as.integer))
+
+delitos_sexo <- delitos_sexo %>%
+  pivot_longer(cols = starts_with("20"), names_to = "Año", values_to = "Cantidad")
+
+tipos_de_delitos <- unique(delitos_sexo$tipo_de_delitos)
+tipos_de_delitos <- tipos_de_delitos[tipos_de_delitos != "Total"]
+```
+
+```{r}
+plots <- list()
+max_cantidad <- max(delitos_sexo$Cantidad)
+
+for (tipo_delito in tipos_de_delitos) {
+  delitos_filtrados <- delitos_sexo %>%
+    filter(tipo_de_delitos == tipo_delito, Sexo != "Total")
+  
+  plot <- ggplot(delitos_filtrados, aes(x = Año, y = Cantidad, fill = Sexo)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(x = "Año", y = "Cantidad", fill = "Sexo") +
+    ggtitle(tipo_delito) +
+    scale_fill_manual(values = c("#FF6666", "#2976FF")) +
+    theme_crimen()+
+    theme(plot.title = element_text(size=20),
+          axis.title = element_text(size=15),
+          legend.title = element_text(size=15),
+          axis.text = element_text(size=11),
+          legend.text = element_text(size=12))+
+    ylim(0,max_cantidad)
+  
+  plots <- c(plots, list(plot))
+}
+```
+
+
+```{r, fig.width=12, fig.height=4.5}
+n_plots <- length(plots)
+for (i in seq(1, n_plots, 2)) {
+  if (i + 1 <= n_plots) {
+    grid.arrange(plots[[i]], plots[[i + 1]], ncol = 2)
+  } else {
+    print(plots[[i]])
+  }
+}
+
+```
+
+|       Existe una clara disparidad en la cantidad de delitos cometidos por hombres y mujeres. En delitos como homicidio, asesinato, lesiones, amenazas, robo con violencia, entre otros, los hombres superan significativamente a las mujeres como perpetradores. Sin embargo, en el caso de la sustracción de menores a partir de 2016, se observa que el sexo femenino ha asumido este delito, posiblemente relacionado con la pérdida de la custodia de sus hijos, aunque esta afirmación es solo una hipótesis. En cuanto a los hurtos, aunque siempre por debajo en cifras, también se registra una presencia femenina notable en comparación con el sexo masculino.
+
+
+```{r, fig.width=5, fig.align='center'}
+delitos_sexo <- delitos_sexo %>%
+  filter(Sexo != "Total")
+
+df <- delitos_sexo %>%
+  group_by(Año, Sexo) %>%
+  summarise(Total = sum(Cantidad)) %>%
+  mutate(Porcentaje = Total / sum(Total) * 100)
+
+ggplot(df, aes(x = "", y = Porcentaje, fill = Sexo)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  facet_wrap(~ Año) +
+  theme_facet_title_bg() +
+  theme(legend.position = "right",
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major = element_blank(),
+        plot.title = element_text(size = 8),
+        strip.text = element_text(face = "bold"))+
+  labs(title = "Porcentaje de delitos cometidos por hombres y mujeres",
+       fill = "Sexo",
+       x = NULL,
+       y = NULL) +
+  scale_fill_manual(values = c("#FF6666", "#2976FF"))+
+  geom_text(aes(label = paste0(round(Porcentaje), "%")), size =3 ,
+            position = position_stack(vjust = 0.4), col = "white")
+```
+
+|       Además, se puede observar que en general el género masculino comete más delitos que el género femenino, aunque es importante mencionar que a partir de 2016 se ha registrado un ligero aumento en el porcentaje de delincuentes de sexo femenino.
+
+\newpage
+
+## Delitos según la Comunidad Autónoma
+
+|       En el contexto de la seguridad y la delincuencia, resulta de vital importancia analizar la distribución de delitos a nivel regional para identificar las áreas geográficas que presentan mayores desafíos en términos de criminalidad. En este sentido, surge la pregunta de cuál ha sido la comunidad autónoma en España que ha experimentado el mayor número de delitos en los últimos años.
+
+```{r}
+lugar_condena %>%
+  pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`), 
+               names_to = "año", values_to = "total_delitos") %>%
+  group_by(Lugar) %>%
+  summarize(total_delitos = sum(total_delitos)) -> comparacion_comunidades
+```
+
+```{r}
+ggplot(comparacion_comunidades, aes(x = reorder(Lugar,-total_delitos), y = total_delitos, fill=Lugar)) +
+  geom_bar(stat = "identity") +
+  coord_flip()+
+  labs(x = "", y = "Total de Delitos", title = "Comparación de Delitos por Comunidad Autónoma")+
+  scale_fill_manual(values = combined_palette)+
+  scale_y_continuous(limits = c(0, 500000), breaks = seq(0, 500000, 100000), 
+                     labels = c("0", "100.000", "200.000","300.000", "400.000", "500.000"))+
+  theme_crimen()+
+  guides(fill=FALSE)
+```
+
+|       La selección de las Comunidades Autónomas más delictivas se fundamenta en la premisa de que el tamaño y la densidad poblacional pueden generar condiciones que favorecen la comisión de actos delictivos. En este sentido, las regiones con una mayor concentración de habitantes y un mayor flujo de personas, como las capitales o las áreas metropolitanas, suelen presentar mayores desafíos en términos de seguridad y control del crimen. Además, estas áreas suelen albergar una diversidad de actividades económicas, sociales y culturales, lo que puede generar tensiones y conflictos que se traducen en un aumento de la incidencia delictiva.
+
+El enfoque detallado en estas Comunidades Autónomas permitirá una exploración más exhaustiva de los factores subyacentes a la problemática delictiva en cada región.
+
+```{r}
+lugar_condena %>%
+  filter(Lugar %in% c("Andalucía", "Cataluña", "Comunidad Valenciana", "Madrid")) %>%
+  pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`),
+               names_to = "Año", values_to = "Cantidad") -> comunidades_delictivas
+```
+
+
+```{r,results='hide'}
+
+comunidades_delictivas %>%
+  group_by(Tipo_delito) %>%
+  summarise(Total = sum(Cantidad)) %>%
+  arrange(desc(Total)) %>%
+  head(4) -> df
+
+df$Total<- format(df$Total, big.mark = ".", decimal.mark = ",")
+tabla_apa <- kable(df, format = "latex",escape = FALSE,col.names = c("Delito", "Total"),
+                   align = c("l", "r"))
+```
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lr}
+\hline
+\textbf{Delito} & \textbf{Total} \\
+\hline
+Contra la Seguridad Vial & 485.462\\
+Hurtos & 279.178 \\
+Lesiones & 219.399 \\
+Robos con fuerza & 104. 113\\
+\hline
+\end{tabular}
+\end{table}
+
+|       De acuerdo con los datos presentados en la tabla, el delito más frecuente en el período analizado es el "Contra la Seguridad Vial" lo que indica que las infracciones relacionadas con la seguridad vial, como conducir bajo los efectos del alcohol o exceder los límites de velocidad, representan una preocupación significativa en términos de delincuencia.
+
+\newpage
+
+|       A continuación se analiza la evolución de los cuatro delitos más frecuentes en las cuatro comunidades autónomas más delictivas de España a lo largo de un periodo determinado. Estas comunidades autónomas, caracterizadas por presentar altos índices de actividad delictiva, han sido objeto de especial atención para comprender y abordar los desafíos en materia de seguridad y justicia en el país.
+
+|       La visualización gráfica proporcionará una representación clara y concisa de la evolución de estos delitos a lo largo del tiempo, permitiendo identificar patrones, tendencias y posibles variaciones en su incidencia. De esta manera, podremos obtener una perspectiva más completa y comprensiva de la problemática delictiva en estas comunidades autónomas.
+
+```{r}
+top_4_delitos <- c("Contra la seguridad vial", "Hurtos", "Lesiones", "Robo con fuerza")
+comunidades_delictivas %>%
+  filter(Tipo_delito %in% top_4_delitos) -> comunidades_delictivas
+```
+
+```{r}
+ggplot(comunidades_delictivas, aes(x = Año, y = Cantidad, color = Tipo_delito, group = Tipo_delito)) +
+  geom_line(size = 0.8) +
+  facet_wrap(~ Lugar) +
+  scale_color_manual(values = combined_palette[c(7,2,12,20)]) +
+  labs(x = "Año", y = "Cantidad", title = "Evolución de los 4 delitos más frecuentes por lugar",
+       color = "Tipo de delito") +
+  scale_x_discrete(breaks = seq(min(comunidades_delictivas$Año), max(comunidades_delictivas$Año), by = 2)) +
+  theme_crimen()
+```
+
+|       Es importante destacar que los cuatro delitos más frecuentes presentados tienen una relevancia significativa en términos de seguridad pública. En primer lugar, los delitos relacionados con la seguridad vial, muestran una alta incidencia en el período analizado. Esto resalta la importancia de promover conductas responsables en las vías, así como implementar medidas eficaces para prevenir y sancionar las infracciones viales.
+
+|       Asimismo, los delitos de "Lesiones" y "Robos con fuerza" también ocupan una posición destacada en cuanto a frecuencia. Estos delitos representan una amenaza para la integridad física de las personas y la seguridad de sus bienes. Por lo tanto, es fundamental establecer estrategias de prevención y respuesta adecuadas para abordar estos problemas y garantizar la protección de los ciudadanos.
+
+|       Es interesante observar que en el año 2021 se evidencia un repunte general en la frecuencia de estos delitos en las cuatro comunidades autónomas consideradas. 
+\newpage
+
+|       Además de los delitos mencionados, también es importante destacar la preocupación por los homicidios y otros tipos de robos. Los homicidios son delitos de extrema gravedad, ya que atentan contra la vida humana y generan un impacto significativo en la sociedad.
+
+ \
+
+```{r}
+lugar_condena %>%
+  filter(Tipo_delito %in% c("Homicidio", "Asesinato", "Homicidio por imprudencia")) %>%
+    pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`),
+               names_to = "Año", values_to = "Cantidad") -> homicidio
+```
+
+```{r}
+ggplot(homicidio, aes(x = Año, y = Lugar, fill = Cantidad)) +
+  geom_tile() +
+  facet_wrap(~ Tipo_delito) +
+  labs(x = "", y = "", fill = "Cantidad", title = "Cantidad de Homicidios y sus formas") +
+  scale_fill_gradientn(colors = turquesa_palette) +
+  scale_x_discrete(breaks = seq(min(homicidio$Año), max(homicidio$Año), by = 3)) +
+  theme_crimen()+
+  theme(strip.text = element_text(size = 6, face = "bold"))
+```
+
+|       Cabe destacar que entre los delitos analizados, uno de particular relevancia son los homicidios por imprudencia. Estos delitos se caracterizan por implicar la muerte de otra persona de forma accidental, como resultado de una negligencia. Es importante resaltar que, aunque estos homicidios no son cometidos intencionalmente, siguen siendo considerados delitos graves debido a las consecuencias trágicas que conllevan para las víctimas y sus familias.
+
+|       Los homicidios por imprudencia siendo mayoría, representan un desafío importante para el sistema de justicia penal, ya que requieren una cuidadosa evaluación de las circunstancias y la determinación de la responsabilidad del individuo involucrado. Estos casos a menudo involucran investigaciones minuciosas y peritajes especializados para determinar la relación causal entre la conducta negligente y el resultado fatal.
+\newpage
+|       Por otro lado, los robos, al ser una experiencia comúnmente relatada por nuestros vecinos, generan una sensación de inseguridad en la comunidad y requieren una atención especial por parte de las autoridades.
+
+```{r}
+lugar_condena %>%
+  filter(Tipo_delito %in% c("Hurtos", "Robo con fuerza", "Robo con violencia")) %>%
+    pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`),
+               names_to = "Año", values_to = "Cantidad") -> robos
+```
+
+```{r, fig.height=3.5}
+ggplot(robos, aes(x = Año, y = Lugar, fill = Cantidad)) +
+  geom_tile() +
+  facet_wrap(~ Tipo_delito) +
+  labs(x = "", y = "", fill = "Cantidad", title = "Hurtos y robos") +
+  scale_fill_gradientn(colors = violeta_palette) +
+  scale_x_discrete(breaks = seq(min(homicidio$Año), max(homicidio$Año), by = 3)) +
+  theme_crimen()+
+  theme(strip.text = element_text(size = 8, face = "bold"))
+```
+
+|       Como se ha mencionado anteriormente, los hurtos representan una preocupación destacada en el panorama delictivo actual. En comparación con otros tipos de robos, su frecuencia y alcance son motivo de atención prioritaria.
+
+
+```{r}
+lugar_condena %>%
+    pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`),
+               names_to = "Año", values_to = "Cantidad")%>%
+    mutate(Tipo_delito = case_when(
+    Tipo_delito %in% c("Homicidio", "Asesinato", "Homicidio por imprudencia") ~ "Homicidio y sus formas",
+    TRUE ~ Tipo_delito
+    )) %>%
+    mutate(Tipo_delito = case_when(
+    Tipo_delito %in% c("Hurtos", "Robo con violencia", "Robo con fuerza") ~ "Robos y Hurtos",
+    TRUE ~ Tipo_delito
+    )) %>%
+    mutate(Tipo_delito = case_when(
+    Tipo_delito %in% c("Contra la salud pública", "Contra la seguridad vial") ~ "Contra la seguridad colectiva",
+    TRUE ~ Tipo_delito
+    ))%>%
+    mutate(Tipo_delito = case_when(
+    Tipo_delito %in% c("Amenazas", "Lesiones") ~ "Contra las personas",
+    TRUE ~ Tipo_delito
+    )) %>%
+    mutate(Tipo_delito = case_when(
+    Tipo_delito %in% c("Estafas", "Falsedades documentales") ~ "Estafas y falsedades",
+    TRUE ~ Tipo_delito
+    ))-> box
+```
+
+
+```{r, fig.height=4.5, fig.width=7}
+rosa_palette <- c("white", "seashell", "#FF9999","#FF6666","#FF0099")
+
+ggplot(data = box, aes(x = Tipo_delito, y = Lugar, fill = Cantidad)) +
+  geom_tile() +
+  labs(x = "", y = "", fill = "Cantidad", title = "Cantidad de delitos según Comunidad Autónoma y Tipo",
+       subtitle = "Desde 2013 hasta 2021") +
+  scale_fill_gradientn(colours = rosa_palette)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
+        axis.text.y = element_text(size = 7))
+```
+\newpage
+
+|       Estas áreas delictivas implican un riesgo directo para la integridad y el bienestar de la sociedad en su conjunto. La comisión de delitos relacionados con el tráfico, como la conducción bajo los efectos del alcohol o las drogas, así como aquellos vinculados a la venta y distribución ilícita de sustancias, representan una preocupación constante para las autoridades y requieren medidas específicas para su abordaje efectivo.
+
+|       La siguiente tabla muestra el delito que más se ha comedido durante los últimos años, con la finalidad de observar si existe algún otro tipo de delito en alguna Comunidad Autónoma.
+
+```{r}
+lugar_condena %>%
+    pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`),
+               names_to = "Año", values_to = "Cantidad") -> tabla
+
+tabla %>%
+  group_by(Lugar, Tipo_delito) %>%
+  summarise(Cantidad_total= sum(Cantidad)) -> tabla
+```
+
+```{r}
+tabla  %>%
+  group_by(Lugar) %>%
+  slice_max(Cantidad_total) -> tabla
+
+
+tabla$Cantidad_total<- format(tabla$Cantidad_total, big.mark = ".", decimal.mark = ",")
+```
+
+```{r, results='hide'}
+tabla_apa <- kable(tabla, format = "html",escape = FALSE, 
+                   caption = 'Delito más cometido en los últimos años por Comunidad Autónoma',col.names = c("Comunidad Autónoma", "Delito", "Cantidad"),
+                   align = c("l", "l", "r"))
+tabla_apa <- gsub("<thead>", '<thead>\n<tr>\n<th colspan="3" style="border-bottom: 1px solid 
+black;"></th>\n</tr>\n', tabla_apa)
+tabla_apa <- gsub("<tbody>", '<tbody>\n<tr>\n<td colspan="3" style="border-top: 0.5px solid black;"></td>\n</tr>\n', tabla_apa)
+tabla_apa <- gsub("</table>", '<tr>\n<td colspan="3" style="border-top: 1px solid black;"></td>\n</tr>\n</table>', tabla_apa)
+
+print(tabla_apa)
+```
+
+
+\begin{table}[ht]
+\centering
+\caption{\textit{Delito más cometido en los últimos años por Comunidad Autónoma}}
+\begin{tabular}{llr}
+\hline
+\textbf{Comunidad Autónoma} & \textbf{Delito} &{Cantidad Total} \\
+\hline
+Andalucía & 	Contra la seguridad vial & 141.281\\
+Aragón & 	Contra la seguridad vial & 15.452 \\
+Canarias & Contra la seguridad vial & 45.369 \\
+Cantabria & Contra la seguridad vial & 9.832	\\
+Castilla - La Mancha & Contra la seguridad vial & 29.614 \\
+Castilla y León & Contra la seguridad vial & 31.785\\
+Cataluña & Contra la seguridad vial & 145.170\\
+Ceuta & Contra la salúd pública & 3.370 \\
+Comunidad Valenciana & Contra la seguridad vial & 98.530 \\
+Extremadura & Contra la seguridad vial & 13.055 \\
+Galicia & Contra la seguridad vial & 53.602 \\
+Islas Baleares & Contra la seguridad vial & 25.313 \\
+La Rioja & Contra la seguridad vial & 4.796 \\
+Madrid & Contra la seguridad vial & 100.481 \\
+Melilla & Falsedades documentales & 3.254 \\
+Murcia & Contra la seguridad vial & 31.300 \\
+Navarra & Contra la seguridad vial & 11.453 \\
+País Vasco & Contra la seguridad vial & 31.207 \\
+Principado de Asturias & Contra la seguridad vial & 17.001 \\
+\hline
+\end{tabular}
+\end{table}
+
+ \
+ 
+|       En Melilla, el delito más cometido es el de "Falsedades documentales". Este tipo de delito implica la manipulación o falsificación de documentos, como por ejemplo, la creación de identidades falsas o la adulteración de información en documentos legales. Estas falsedades documentales pueden tener diversas finalidades, como eludir controles migratorios, cometer fraudes o evadir responsabilidades legales.
+
+|       Por otro lado, en Ceuta, el delito más frecuente es el relacionado con la "salud pública". Este tipo de delito se refiere a las acciones que ponen en riesgo la salud de la población o que afectan negativamente al bienestar general. Esto puede incluir la venta ilegal de medicamentos, la fabricación y distribución de productos no autorizados, la comercialización de alimentos en mal estado o contaminados, entre otros.
+
+\newpage
+
+## Delitos según la Nacionalidad del atacante
+
+|       En este ámbito, resulta relevante analizar los delitos cometidos en relación a la nacionalidad del atacante. Este enfoque permite examinar las posibles correlaciones entre la nacionalidad de los perpetradores y los tipos de delitos cometidos, proporcionando información valiosa para comprender y abordar los desafíos específicos en materia de seguridad. 
+
+|       Al estar estudiando el País, es lógico que aquellos condenados procedentes de España sean mayoría por lo que estudiaremos otras nacionalidades.
+
+```{r}
+numero_delitos %>%
+    pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`, `2016`, `2015`, `2014`, `2013`),
+               names_to = "Año", values_to = "Cantidad") -> numero_delitos
+```
+
+```{r}
+numero_delitos$Año <- factor(numero_delitos$Año, levels = c("2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021"))
+
+numero_delitos %>%
+  filter(Sexo != "Total" & Nacionalidad != "Total" & Nacionalidad != "Española") -> num
+
+```
+
+```{r, fig.width=8}
+ggplot(num, aes(x = as.factor(Año), y = Cantidad, fill = Sexo))+
+  geom_bar(stat = "identity", position = "dodge")+
+  facet_wrap(~ Nacionalidad)+
+  labs(x = "Año", y = "Cantidad", fill = "Sexo")+
+   scale_fill_manual(values = c(violeta_palette[10], violeta_palette[4])) + 
+  ggtitle("Distribución de condenados por sexo y nacionalidad")+
+  theme_facet_title_bg()+
+  theme(legend.position = "right")
+```
+
+|       En el marco de esta investigación, es importante examinar los delitos cometidos en relación con la nacionalidad del atacante, prestando especial atención a aquellos procedentes de África y América. Estos continentes comparten una proximidad geográfica con nuestro país, lo que ha llevado a que sus ciudadanos emigren y establezcan vínculos con la sociedad receptora. 
+
+|       Dentro de este contexto, se ha observado que existe una proporción desequilibrada entre los delincuentes de sexo masculino y femenino en estas comunidades. Si bien los factores que contribuyen a esta diferencia no pueden ser atribuidos únicamente a la nacionalidad.
+
+\newpage
+
+
+```{r}
+numero_delitos %>%
+  filter(Sexo == "Total" & Nacionalidad != "Total") -> num
+```
+
+```{r}
+num <- num  %>%
+  mutate(Num_delitos = ifelse(Num_delitos == "1", "Un único delito", "Reincidentes")) %>%
+  group_by(Nacionalidad, Num_delitos) %>%
+  summarize(Cantidad = sum(Cantidad))
+
+num <- num %>%
+  group_by(Nacionalidad) %>%
+  mutate(Proporcion = Cantidad / sum(Cantidad),
+          Porcentaje = paste0(round(Proporcion * 100), "%"))
+
+
+```
+
+
+```{r, fig.height= 3, fig.width=8}
+ggplot(num, aes(x = "", y = Proporcion, fill = Num_delitos)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  facet_grid(~ Nacionalidad) +
+  labs(title = "Proporción de delincuentes reincidentes",subtitle = "En base su nacionalidad",
+       fill = "Número de delitos",
+       x = NULL, y = NULL) +
+  scale_fill_manual(values = c(turquesa_palette[4], turquesa_palette[8]))+
+  theme_facet_title_bg() +
+  theme(legend.position = "right",
+        axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major = element_blank(),
+        strip.text = element_text(face = "bold"))+
+  geom_text(aes(label = Porcentaje), size = 3,
+            position = position_stack(vjust = 0.5), col = "black")
+
+```
+
+|       En relación a los individuos provenientes diversos paises que cometen delitos en nuestro país, se observa que, en general, no presentan un patrón de reincidencia delictiva. Este hecho puede resultar reconfortante, ya que sugiere que la mayoría de estas personas no continúan cometiendo delitos una vez que han sido detenidas o condenadas.
+
+|       No obstante, al analizar más detenidamente aquellos delincuentes que pertenecen a un entorno específico, se destaca que aproximadamente el 20% de ellos muestra un comportamiento reincidente. Esta cifra revela una proporción significativa de individuos que, a pesar de su origen, han vuelto a incurrir en actividades delictivas después de haber sido previamente procesados por la justicia
+
+|       Además, se estudia a los Españoles para conocer su número de reincidencia más frecuente, lo cual es observable que la gran mayoría únicamente reincide una vez más a parte de la primera, lo que es lógico si han tenido dos avisos o incluso si ya han ido dos veces a la cárcel.Por otro lado, se comprueba que aquellas dos nacionalidades más comunes también reinciden 2 veces en su mayoría.
+
+
+```{r}
+numero_delitos %>%
+  filter(Num_delitos !="1" & 
+           Nacionalidad == "Española" & Sexo == "Total") -> num
+```
+
+```{r, fig.height=4}
+rosa_palette <- c("#FFB2FF", "#FFA3FF", "#FF94FF", "#FF85FF", "#FF75FF", "#FF66FF", "#FF57FF", "#FF48FF", "#FF0099", "#FF007F", "#FF004C", "#FF3333", "#FF6666", "#FF9999", "#FFCCCC")
+ggplot(data = num, aes(x = as.factor(Año), y = Cantidad, fill = Num_delitos)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Año", y = "Cantidad de delitos", fill = "Número de delitos",
+       title = "Evolución de las reincidencias según su número",
+       subtitle = "Nacionalidad española") +
+  scale_fill_manual(values = c(rosa_palette[12], rosa_palette[8], rosa_palette[1]))+
+  theme_crimen()
+```
+
+```{r}
+numero_delitos %>%
+  filter(Num_delitos != "1" & (Nacionalidad == "Africa" | Nacionalidad == "América") & Sexo == "Total") -> num
+num$Año <- as.numeric(as.character(num$Año))
+
+```
+
+```{r, fig.height=3.5}
+ggplot(data = num, aes(x = Año, y = Cantidad, fill = Num_delitos)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Año", y = "Cantidad de delitos", fill = "Número de delitos",
+       title = "Evolución de las reincidencias según su número",
+       subtitle = "Nacionalidad africana y americana") +
+  facet_grid(~Nacionalidad)+
+  scale_x_continuous(breaks = seq(min(num$Año), max(num$Año), by = 2)) +
+    scale_fill_manual(values = c(rosa_palette[12], rosa_palette[8], rosa_palette[1]))+
+  theme_facet_title_bg()
+```
+
+## Delitos sexuales 
+|       En la actualidad, los delitos sexuales han adquirido una prominencia significativa en los medios de comunicación, generando una creciente preocupación en la sociedad. Estos delitos representan una categoría particularmente perturbadora y alarmante, que abarca una amplia gama de conductas ilegales que violan la integridad sexual y psicológica de las personas. 
+
+|       La frecuencia con la que se informa sobre casos de agresiones sexuales, abusos, violaciones y otros actos de naturaleza sexual ha aumentado en los telediarios y otros medios de comunicación. Esta situación ha despertado un interés generalizado en comprender y abordar de manera efectiva los factores que contribuyen a la comisión de delitos sexuales, así como en diseñar estrategias preventivas y de apoyo a las víctimas. 
+
+```{r}
+delitos_sexuales %>%
+    pivot_longer(cols = c(`2021`, `2020`, `2019`, `2018`, `2017`),
+               names_to = "Año", values_to = "Cantidad") -> delitos_sexuales
+```
+
+
+```{r, fig.height=3.5}
+datos <- delitos_sexuales %>% 
+  filter(Nacionalidad != "Española") %>% arrange(desc(Cantidad))
+
+ggplot(datos, aes(x = Nacionalidad, y = Cantidad, fill = Nacionalidad)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Nacionalidad", y = "Cantidad", title = "Nacionalidad más común entre los condenados por delitos sexuales") +
+  scale_fill_manual(values = c(combined_palette[6], combined_palette[8], combined_palette[13], combined_palette[20]))+
+  theme_crimen()
+```
+
+|       La nacionalidad americana y africana, al igual que en el estudio previo, es aquella destacable en este tipo de delitos. Una vez conocida dicha información, nos centraremos en la nacionalidad española ya que corresponde a la gran mayoría. 
+
+```{r}
+delitos_sexuales %>% 
+  filter(Nacionalidad == "Española")  -> sexuales_españoles
+```
+
+```{r, fig.height=2}
+ggplot(data = sexuales_españoles, aes(x = as.factor(Año), y = Cantidad, group = 1)) +
+  geom_smooth(method = "loess",  color="#FF6666", fill= "seashell2") +
+  labs(x = "Año", y = "Cantidad total de delitos sexuales")+
+  theme_crimen()
+```
+
+|       Este tipo de gráfico nos muestra la tendencia de los españoles a cometer este tipo de delitos lo que es bastante preocupante ya que se mantiene constante entre los 200/400 al año.
+
+```{r, fig.height=4}
+combined_palette <- c("#FF004C", "#75C3FF", "#FF85FF",  "#FF0099",  "#D77EFF", "#B2FFFF",  "#66B4FF","#B234FF")
+
+ggplot(data = sexuales_españoles, aes(x = Año, y = Cantidad, group = Tipo_delito, color = Tipo_delito)) +
+  geom_line(size=1) +
+  labs(x = "Año", y = "Cantidad", color = "Tipo de delito") +
+  scale_color_manual(values = combined_palette)+
+  theme(legend.position = "right")
+
+
+```
+
+
+
+|       Finalmente, es de gran preocupación y profunda alarma el hecho de que los delitos de abusos sexuales sean los más frecuentes y prevalentes en nuestra sociedad. Esta situación nos confronta con una realidad desgarradora, en la cual un número significativo de personas está siendo víctima de actos de violencia sexual. Estos delitos representan una violación atroz de la integridad física, emocional y psicológica.
+
+|       Además de la consternación que generan los delitos de abusos sexuales en general, es especialmente alarmante que los abusos dirigidos a menores de 16 años hayan ocupado el segundo lugar en términos de frecuencia durante el año 2021. Este dato es especialmente inquietante, ya que nos enfrenta a la triste realidad de que los más vulnerables y necesitados de protección, nuestros niños y adolescentes, están siendo objeto de estos actos abominables. 
+
+## Comparativa con Chicago
+
+|       Como punto final, hemos decidido comparar los resultados de nuestro país con los de Chicago debido a que es un lugar que no se encuentra en Europa y nos brinda una perspectiva diferente. Al contrastar los datos de nuestro país con los de Chicago, podemos obtener un panorama más amplio y enriquecedor de la problemática de los delitos sexuales. Además, la comparación con una ciudad como Chicago, que pertenece a un contexto geográfico y cultural distinto al nuestro, nos permite evaluar y aprender de las estrategias y enfoques implementados en otros lugares para abordar los delitos sexuales. Podemos identificar buenas prácticas, políticas efectivas y enfoques innovadores que podrían ser adaptados y aplicados en nuestro propio país para mejorar la prevención, el apoyo a las víctimas y la persecución de los delincuentes.
+
+```{r}
+df_chicago_sin_na %>%
+    slice(seq(1, nrow(df_chicago_sin_na), 20)) -> xd
+```
+
+```{r}
+datos_filtrado_años <- subset(df_chicago_sin_na, !(Año %in% c(2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2023)))
+```
+
+
+```{r}
+datos_filtrados <- subset(datos_filtrado_años, !(Tipo %in% c("BATTERY", "DECEPTIVE PRACTICE", "OTHER OFFENSE", "CRIMINAL DAMAGE", "WEAPONS VIOLATION", "CRIMINAL TRESPASS", "SEX OFFENSE", "INTERFERENCE WITH PUBLIC OFFICER", "OFFENSE INVOLVING CHILDREN", "PUBLIC PEACE VIOLATION", "PROSTITUTION", "GAMBLING", "CRIM SEXUAL ASSAULT", "LIQUOR LAW VIOLATION", "ARSON", "STALKING", "CONCEALED CARRY LICENSE VIOLATION", "NON - CRIMINAL", "HUMAN TRAFFICKING", "OBSCENITY", "PUBLIC INDECENCY", "OTHER NARCOTIC VIOLATION", "NON-CRIMINAL", "NON-CRIMINAL (SUBJECT SPECIFIED)", "RITUALISM", "DOMESTIC VIOLENCE", "ASSAULT", "INTIMIDATION")))
+```
+
+```{r}
+datos_traducidos <- datos_filtrados %>%
+  mutate(Tipo = case_when(
+    Tipo == "THEFT" ~ "Hurtos",
+    Tipo == "MOTOR VEHICLE THEFT" ~ "Sustracciones de vehículos",
+    Tipo == "ROBBERY" ~ "Robos con violencia e intimidación",
+    Tipo == "NARCOTICS" ~ "Tráfico de drogas",
+    Tipo == "BURGLARY" ~ "Robos con fuerza en domicilios, establecimientos y otras instalaciones",
+    Tipo == "CRIMINAL SEXUAL ASSAULT" ~ "Agresión sexual con penetración",
+    Tipo == "KIDNAPPING" ~ "Secuestro",
+    Tipo == "HOMICIDE" ~ "Homicidios dolosos y asesinatos consumados"
+  ))
+```
+
+```{r}
+suma_tipos <- as.data.frame(table(datos_traducidos$Año, datos_traducidos$Tipo))
+colnames(suma_tipos) <- c("Año", "Tipo", "Total")
+```
+
+```{r, fig.width=15, fig.height=6}
+ggplot(suma_tipos, aes(x = Año, y = as.numeric(Total), fill = Tipo)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(x = "Años", y = "Cantidad de delitos", fill = "Tipo de delito") +
+    ggtitle("Histograma de Tipos por Año en Chicago")+
+  theme_crimen()+
+  theme(
+    plot.title = element_text(size=20),
+          axis.title = element_text(size=18),
+          legend.title = element_text(size=18),
+          axis.text = element_text(size=15),
+          legend.text = element_text(size=12)
+  )+
+  scale_fill_manual(values = combined_palette)
+```
+
+```{r}
+df_españa <- select(df_españa, -2)
+```
+
+```{r}
+df_españa %>%
+  filter(Parámetro != "Total") -> df_españa
+```
+
+```{r, fig.width=15, fig.height=6}
+ggplot(df_españa, aes(x = Año, y = as.numeric(Denuncias), fill = Parámetro)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(x = "Años", y = "Cantidad de delitos", fill = "Tipo de delito") +
+    ggtitle(paste("Histograma de Parámetros por Año en España"))+
+  theme_crimen()+
+  theme(
+    plot.title = element_text(size=20),
+          axis.title = element_text(size=18),
+          legend.title = element_text(size=18),
+          axis.text = element_text(size=15),
+          legend.text = element_text(size=12)
+  )+
+  scale_fill_manual(values = combined_palette)
+```
+
+|       Tras analizar ambas gráficas, se evidencia una marcada disparidad en la cantidad máxima de delitos representados en el eje y entre Chicago y España, siendo de 60,000 en Chicago y 600 en España, una diferencia significativa. Ambas gráficas muestran que el delito más frecuente es el hurto. No obstante, también se observan claras diferencias: en Chicago, los dos delitos más comunes en orden descendente son el tráfico de drogas y las sustracciones de vehículos, mientras que en España son los homicidios dolosos y asesinatos consumados, y los robos con fuerza en domicilios, establecimientos y otras instalaciones. Estos delitos comunes en España son motivo de preocupación y, aunque ambos casos son graves, los homicidios y robos con fuerza tienen un mayor impacto en la población y requieren una pronta acción. No obstante, no debemos subestimar la importancia del tráfico de drogas, ya que constituye un delito con un gran impacto, especialmente en la población joven, tanto para aquellos que suministran y transportan drogas como para aquellos que las consumen.
+\newpage
+
+## Conclusiones
+
+|       En conclusión, el estudio realizado para averiguar qué medidas tomar contra la delincuencia en España ha arrojado resultados significativos y proporcionado información valiosa para abordar este desafío de manera efectiva. A lo largo de esta exhaustiva investigación, se ha analizado en profundidad la situación actual de la delincuencia en el país, por tanto nos vemos capacitados para recomendar las siguientes medidas:
+
+|       En primer lugar, es necesario reforzar la seguridad en las calles para prevenir la **consumación y tentativa** de cometer delitos. Esto puede lograrse mediante un aumento de la presencia policial en áreas de alta incidencia delictiva, implementando patrullajes más frecuentes y mejorando la coordinación entre las fuerzas de seguridad.
+
+|       Por otro lado, los delitos más frecuentes según la **franja de edad** indican que el grupo de edad entre los 41 y 50 años presenta una mayor incidencia delictiva, especialmente en delitos relacionados con la seguridad vial. Por tanto, se sugiere una campaña de concienciación urgente y la implementación de educación vial en las escuelas, así como concienciar a los jóvenes sobre las consecuencias de sus actos al volante no solo para ellos sino también para los demás pasajeros. Además, se recomienda establecer leyes más rigurosas para erradicar este tipo de delitos y promover la responsabilidad individual en el cumplimiento de las normas de tráfico.
+
+|       Además, existen otros tipos de delitos, como robos, lesiones y amenazas, que aunque no son tan comunes como los relacionados con la seguridad vial, también requieren atención. Se propone la realización de charlas para explicar y concienciar sobre la importancia y consecuencias de estos delitos, así como promover la participación comunitaria en la detección y prevención de los mismos.
+
+|       En cuanto al estudio de la relación entre **género** y cometer delitos, en general, la mayoría de los delitos son cometidos por hombres. Estos destacan en delitos de lesiones, amenazas y seguridad vial. En cuánto al género femenino, tan solo cabe mencionar que el único delito en el que llegan a superar a los hombres es en sustracción de menores y pueden compararse a estos aunque siempre por debajo en hurtos. Por tanto, se propone la provisión de programas de intervención temprana como charlas educativas especializadas para los delitos destacados y apoyo social para ayudar a estos individuos a encontrar alternativas positivas y constructivas a la delincuencia. Además, se deben fomentar programas de educación de género que promuevan el respeto mutuo y la igualdad de oportunidades.
+
+|       En relación a las diferentes **comunidades autónomas**, la mayoría de los delitos cometidos están relacionados con la seguridad vial, excepto en Ceuta y Melilla. En Ceuta, destacan delitos contra la salud pública, y en Melilla, falsedades documentales. Para abordar esta situación, es necesario aumentar las medidas para la detección de estos documentos falsos en la frontera con África o solucionar la raíz del problema de forma internacional.
+
+|       Al analizar en detalle los delitos de **homicidio**, se destaca la incidencia de homicidios por imprudencia, es decir, que ocurren de manera accidental. Es necesario examinar a fondo las causas de estos accidentes, pero se puede inferir que se encuentran dentro del ámbito de la seguridad vial. Por tanto, es necesario fortalecer las medidas de prevención de accidentes de tráfico y concienciar sobre la importancia de cumplir las normas de seguridad vial para evitar este tipo de tragedias.
+
+|       Por otro lado, las **nacionalidades más delictivas**, excluyendo la española, son la africana y americana, lo cual es lógico dado la proximidad geográfica con África y la afluencia de personas provenientes de Sudamérica. Como dato positivo, estas nacionalidades tienden a no reincidir, y en caso de hacerlo, suelen hacerlo una vez más como máximo. Para abordar esta situación, es necesario fortalecer la cooperación internacional en la lucha contra el crimen transnacional y el tráfico de drogas, armas y personas, compartiendo información, fortaleciendo los mecanismos de extradición y colaborando en investigaciones conjuntas.
+
+|       En cuanto a los **abusos sexuales**, se evidencia una preocupación considerable en todas las edades. Como propuesta general, se sugiere llevar a cabo charlas concienciadoras sobre la importancia del lema "No es No" para prevenir este tipo de delitos, que pueden dejar secuelas duraderas en las víctimas. Además, es fundamental fortalecer las leyes y los mecanismos de protección para las víctimas de abuso sexual, así como brindar acceso a servicios de apoyo y rehabilitación.
+
+|       Finalmente, es preocupante que, en **comparación con Chicago**, a pesar de permitir el porte de armas en dicho país, en España se registran muchos más homicidios. Para abordar esta situación, es necesario evaluar y mejorar el sistema de justicia penal para garantizar una aplicación equitativa de la ley y la protección de los derechos de todas las personas involucradas. Esto puede implicar reformas legales, capacitación para jueces y fiscales, y fortalecimiento de los sistemas de defensoría pública. Además, es fundamental promover programas de desarme y concienciar sobre la importancia de la resolución pacífica de conflictos.
+
+|       Es importante destacar que estas son solo algunas medidas generales y que cada contexto y problemática delictiva requiere soluciones específicas y adaptadas a la realidad local. Es crucial contar con un enfoque integral y multidisciplinario que involucre a diferentes actores, como autoridades gubernamentales, organizaciones de la sociedad civil, instituciones educativas y la comunidad en general, para abordar de manera efectiva los desafíos relacionados con la delincuencia.
+
+```{r}
+dataframe_cca %>%
+  filter(Nacionalidad == "Total") %>%
+  filter(Lugar_de_condena != "Total Nacional") -> dataframe_cca_notot
+```
+
+```{r}
+dataframe_cca_notot$Lugar_de_condena <- gsub("Asturias, Principado de", "Principado de Asturias", dataframe_cca_notot$Lugar_de_condena)
+dataframe_cca_notot$Lugar_de_condena <- gsub("Balears, Illes", "Islas Baleares", dataframe_cca_notot$Lugar_de_condena)
+dataframe_cca_notot$Lugar_de_condena <- gsub("Comunitat Valenciana", "Comunidad Valenciana", dataframe_cca_notot$Lugar_de_condena)
+dataframe_cca_notot$Lugar_de_condena <- gsub("Madrid, Comunidad de", "Comunidad de Madrid", dataframe_cca_notot$Lugar_de_condena)
+dataframe_cca_notot$Lugar_de_condena <- gsub("Murcia, Región de", "Región de Murcia", dataframe_cca_notot$Lugar_de_condena)
+dataframe_cca_notot$Lugar_de_condena <- gsub("Navarra, Comunidad Foral de", "Comunidad Foral de Navarra", dataframe_cca_notot$Lugar_de_condena)
+dataframe_cca_notot$Lugar_de_condena <- gsub("Rioja, La", "La Rioja", dataframe_cca_notot$Lugar_de_condena)
+```
+
+```{r}
+data_ccaa_mapa %>%
+  rename(Lugar_de_condena = comunidad_autonoma) -> data_ccaa_mapa
+dataframe_cca_notot_grafico <- data_ccaa_mapa %>%
+  left_join(dataframe_cca_notot, by= "Lugar_de_condena")
+```
+
+```{r, fig.align='center', fig.width= 10, fig.height=6}
+dataframe_cca_notot_grafico %>%
+  slice(seq(1, nrow(dataframe_cca_notot_grafico), 5)) %>%
+  mutate(lat = case_when(id == 4 ~ lat+700000, 
+                             id != 4 ~ lat,
+                             TRUE ~ 0)) %>%
+  mutate(long = case_when(id == 4 ~ long+300000, 
+                             id != 4 ~ long,
+                             TRUE ~ 0)) %>%
+  ggplot(aes(x=long, y= lat, group = group)) +
+  geom_polygon(aes(fill=Total), color= "black", size = 0.2) +
+  labs( title = "Crímenes por Comunidades Autónomas",x = "", y = "",
+        fill = "Total de Crímenes") +
+  geom_rect(aes(xmin = -800000,xmax = -100000, ymin = 3800000, ymax = 4050000), fill = NA,
+            color = "darkgray", size = 1)+
+   scale_fill_gradientn(colors = turquesa_palette,
+                         breaks = c(0, 20, 40, 60),
+                      labels = c("0", "20.000", "40.000", "60.000")) +
+  theme_crimen()+
+  theme(axis.text = element_blank(),
+        axis.line = element_blank(),
+        plot.title = element_text(size = 20))
+```
